@@ -3,7 +3,12 @@
 #define Flickagram_HPP_
 
 #include <bb/cascades/GroupDataModel>
+#include <bb/cascades/ActivityIndicator>
+#include <bb/cascades/ListView>
 #include <QObject>
+#include <QFile>
+
+using namespace bb::cascades;
 
 namespace bb {
 namespace cascades {
@@ -20,65 +25,27 @@ class Flickagram: public QObject {
 
 Q_OBJECT
 
-Q_PROPERTY(bool active READ active NOTIFY activeChanged)
-Q_PROPERTY(bool error READ error NOTIFY statusChanged)
-Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY statusChanged)
-
-Q_PROPERTY(bb::cascades::DataModel* model READ model CONSTANT)
-
 public:
 	Flickagram(bb::cascades::Application *app);
-
-public Q_SLOTS:
-	/*
-	 * Called by the QML to get flickr interestingness photos
+	/*!
+	 * Initiates the network request.
 	 */
-	void requestInterestingnessPhotos();
-
-	/*
-	 * Allows the QML to reset the state of the application
-	 */
-	void reset();
-
-Q_SIGNALS:
-	/*
-	 * This signal is emitted whenever the photos have been loaded successfully
-	 */
-	void photosLoaded();
-
-	/*
-	 * The change notification signals of the properties
-	 */
-	void activeChanged();
-	void statusChanged();
+	Q_INVOKABLE
+	void initiateRequest();
 
 private Q_SLOTS:
-	/*
-	 * Handles the complete signal from FlickrRequest when
-	 * the request is complete
-	 * @see FlickrRequest::complete()
+	/*!
+	 * Handles the network reply.
 	 */
-	void onFlickrInterestingnessPhotos(const QString &info, bool success);
-
+	void requestFinished(QNetworkReply* reply);
 private:
-	/*
-	 * Parses the JSON response from the twitter request
-	 */
-	void parseResponse(const QString&);
+	ActivityIndicator *mActivityIndicator;
+	GroupDataModel *mGroupDataModel;
+	ListView *mListView;
+	QNetworkAccessManager *mNetworkAccessManager;
+	QFile *mFile;
 
-	/*
-	 * The accessor methods of the properties
-	 */
-	bool active() const;
-	bool error() const;
-	QString errorMessage() const;
-	bb::cascades::DataModel* model() const;
-
-private:
-	bool m_active;
-	bool m_error;
-	QString m_errorMessage;
-	bb::cascades::GroupDataModel* m_model;
+	void cleanupXml();
 
 };
 

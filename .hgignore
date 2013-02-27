@@ -1,0 +1,5 @@
+
+syntax: regexp
+^arm/o\.le-v7-g$
+syntax: regexp
+^x86/o-g$

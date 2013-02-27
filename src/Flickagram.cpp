@@ -1,145 +1,155 @@
 // List with context menu project template
 #include "Flickagram.hpp"
-#include "FlickrRequest.h"
+
+#include <QtXml/QDomDocument>
+#include <bb/cascades/QListDataModel>
+
+#include <bb/cascades/GroupDataModel>
 
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/ListView>
-#include <bb/cascades/GroupDataModel>
-#include <bb/data/JsonDataAccess>
+#include <bb/cascades/XmlDataModel>
+
+#include <QObject>
+#include <QIODevice>
+#include <QDir>
 
 using namespace bb::cascades;
-using namespace bb::data;
 
 Flickagram::Flickagram(bb::cascades::Application *app) :
-		QObject(app), m_active(false), m_error(false), m_model(
-				new GroupDataModel(QStringList() << "id", this)) {
-
-	m_model->setGrouping(ItemGrouping::None);
+		QObject(app) {
 
 	// create scene document from main.qml asset
 	// set parent to created document to ensure it exists for the whole application lifetime
 	QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
-	qml->setContextProperty("_flickr", this);
+	qml->setContextProperty("app", this);
 
 	// create root object for the UI
 	AbstractPane *root = qml->createRootObject<AbstractPane>();
-	// set created root object as a scene
+
+	mGroupDataModel = new GroupDataModel(QStringList());
+	mGroupDataModel->setGrouping(ItemGrouping::None);
+
+	// Retrieve the activity indicator from QML so that we can start
+	// and stop it from C++
+	mActivityIndicator = root->findChild<ActivityIndicator*>("indicator");
+
+	// Retrieve the list so we can set the data model on it once
+	// we retrieve it
+	mListView = root->findChild<ListView*>("list");
+
+	// Create a network access manager and connect a custom slot to its
+	// finished signal
+	mNetworkAccessManager = new QNetworkAccessManager(this);
+
+	bool result = connect(mNetworkAccessManager,
+			SIGNAL(finished(QNetworkReply*)), this,
+			SLOT(requestFinished(QNetworkReply*)));
+
+	// Displays a warning message if there's an issue connecting the signal
+	// and slot. This is a good practice with signals and slots as it can
+	// be easier to mistype a slot or signal definition
+	Q_ASSERT( result);
+	Q_UNUSED(result);
+
+// Create a file in the application's data directory
+	mFile = new QFile("data/model.xml");
+
+// set created root object as a scene
 	app->setScene(root);
 
-	/*{
-	 // load JSON data from file to QVariant
-	 bb::data::JsonDataAccess jda;
-	 QVariantList lst =
-	 jda.load("app/native/assets/mydata.json").toList();
-	 if (jda.hasError()) {
-	 bb::data::DataAccessError error = jda.error();
-	 qDebug() << "JSON loading error: " << error.errorType() << ": "
-	 << error.errorMessage();
-	 } else {
-	 qDebug() << "JSON data loaded OK!";
-	 GroupDataModel *m = new GroupDataModel();
-	 // insert the JSON data to model
-	 m->insertList(lst);
-	 // make the model flat
-	 m->setGrouping(ItemGrouping::None);
-	 // find cascades component of type ListView with an objectName property set to the value 'listView'
-	 // usable if one do not want to expose GroupDataModel to QML (qmlRegisterType<GroupDataModel>("com.example", 1, 0, "MyListModel");)
-	 ListView *list_view = root->findChild<ListView*>("listView");
-	 // assign data model object (m) to its GUI representation object (list_view)
-	 if (list_view)
-	 list_view->setDataModel(m);
-	 }
-	 }*/
-
 }
 
-void Flickagram::reset() {
-	m_error = false;
-	m_errorMessage.clear();
+void Flickagram::initiateRequest() {
+// Start the activity indicator
+	mActivityIndicator->start();
 
-	emit statusChanged();
+// Create and send the network request
+	QNetworkRequest request = QNetworkRequest();
+
+	QString queryUri = QString(
+			"%1?method=%2&api_key=%3&extras=url_t,url_m&format=rest").arg(
+			"http://api.flickr.com/services/rest/",
+			"flickr.interestingness.getList",
+			"468f6dc4e3733eddca5084d4ec8405fd");
+	qDebug() << queryUri;
+	QUrl url(queryUri);
+	request.setUrl(QUrl(queryUri));
+	mNetworkAccessManager->get(request);
 }
 
-/*
- *  App::requestInterestingnessPhotos()
- *
- *  Initiates an http request to retrieve the latest interestingness photos
- *  When the network request is complete
- *  onFlickrInterestingnessPhotos method is called with the result
- */
-void Flickagram::requestInterestingnessPhotos() {
-	//if (m_active)
-	//	return;
+void Flickagram::requestFinished(QNetworkReply* reply) {
+// Check the network reply for errors
+	if (reply->error() == QNetworkReply::NoError) {
 
-	FlickrRequest* request = new FlickrRequest(this);
-	connect(request, SIGNAL(complete(QString, bool)), this,
-			SLOT(onFlickrInterestingnessPhotos(QString, bool)));
-	request->requestInterestingnessPhotos();
+		// Open the file and print an error if the file cannot be opened
+		if (!mFile->open(QIODevice::ReadWrite)) {
+			qDebug() << "\n Failed to open file";
+			return;
+		}
 
-	m_active = true;
-	emit activeChanged();
-}
-//! [2]
-void Flickagram::onFlickrInterestingnessPhotos(const QString &info, bool success) {
-	FlickrRequest *request = qobject_cast<FlickrRequest*>(sender());
+		// Write to the file using the reply data and close the file
+		mFile->write(reply->readAll());
+		mFile->flush();
+		mFile->close();
 
-	if (success) {
-		parseResponse(info);
+		cleanupXml();
 
-		emit photosLoaded();
+		// Set the new data model on the list and stop the activity indicator
+		mListView->setDataModel(mGroupDataModel);
+		mActivityIndicator->stop();
+
 	} else {
-		m_errorMessage = info;
-		m_error = true;
-		emit statusChanged();
+		qDebug() << "\n Problem with the network";
+		qDebug() << "\n" << reply->errorString();
 	}
-
-	m_active = false;
-	emit activeChanged();
-
-	request->deleteLater();
 }
-//! [3]
 
-/*
- * App::parseResponse()
- *
- * Parses the JSON data from the twitter response and populates the ListView.
- */
-//! [4]
-void Flickagram::parseResponse(const QString &response) {
-	m_model->clear();
+void Flickagram::cleanupXml() {
 
-	if (response.trimmed().isEmpty())
+	// clear group data model
+	mGroupDataModel->clear();
+
+	if (!mFile->open(QFile::ReadOnly | QFile::Text)) {
+		fprintf(stderr, "Error to open file.\n");
 		return;
-
-	// Parse the json response with JsonDataAccess
-	JsonDataAccess dataAccess;
-	const QVariant variant = dataAccess.loadFromBuffer(response);
-
-	// The qvariant is an array of tweets which is extracted as a list
-	const QVariantList feed = variant.toList();
-
-	// For each object in the array, push the variantmap in its raw form
-	// into the ListView
-	foreach (const QVariant &photo, feed){
-		m_model->insert(photo.toMap());
+	} else {
+		fprintf(stderr, "File opened.\n");
 	}
-}
 
-bool Flickagram::active() const {
-	return m_active;
-}
+	QList<QMap<QString, QString> > photos;
 
-bool Flickagram::error() const {
-	return m_error;
-}
+	QDomDocument doc("mydocument");
 
-QString Flickagram::errorMessage() const {
-	return m_errorMessage;
-}
+	if (!doc.setContent(mFile)) {
+		return;
+	}
+	mFile->close();
 
-bb::cascades::DataModel* Flickagram::model() const {
-	return m_model;
+	//Get the root element
+	QDomElement docElem = doc.documentElement();
+
+	// you could check the root tag name here if it matters
+	QString rootTag = docElem.tagName(); // == photos
+
+	// get the node's interested in, this time only caring about photos
+	QDomNodeList nodeList = docElem.elementsByTagName("photo");
+
+	//Check each node one by one.
+	QMap<QString, QVariant> photo;
+	for (int ii = 0; ii < nodeList.count(); ii++) {
+
+		// get the current one as QDomElement
+		QDomElement el = nodeList.at(ii).toElement();
+
+		photo["id"] = el.attributes().namedItem("id").nodeValue();
+		photo["title"] = el.attributes().namedItem("title").nodeValue();
+		photo["url_t"] = el.attributes().namedItem("url_t").nodeValue();
+		photo["url_m"] = el.attributes().namedItem("url_m").nodeValue();
+
+		mGroupDataModel->insert(photo);
+	}
+
 }
