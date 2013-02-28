@@ -8,6 +8,11 @@
 #include <QObject>
 #include <QFile>
 
+#include <QtCore/QObject>
+#include <QtCore/QVector>
+
+#include "WebImageView.h"
+
 using namespace bb::cascades;
 
 namespace bb {
@@ -32,18 +37,26 @@ public:
 	 */
 	Q_INVOKABLE
 	void initiateRequest();
+	Q_INVOKABLE
+	void downloadImageInitiateRequest(const QString & uri);
+
+protected:
+	void setAsWallpaper(QString url);
 
 private Q_SLOTS:
 	/*!
 	 * Handles the network reply.
 	 */
 	void requestFinished(QNetworkReply* reply);
+	void imageRequestFinished(QNetworkReply* reply);
 private:
 	ActivityIndicator *mActivityIndicator;
 	GroupDataModel *mGroupDataModel;
 	ListView *mListView;
 	QNetworkAccessManager *mNetworkAccessManager;
+	QNetworkAccessManager *mNetworkAccessManagerImages;
 	QFile *mFile;
+	QFile *mFileWallpaper;
 
 	void cleanupXml();
 

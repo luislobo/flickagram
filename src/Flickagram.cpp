@@ -11,15 +11,19 @@
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/ListView>
 #include <bb/cascades/XmlDataModel>
+#include <bb/platform/HomeScreen>
 
 #include <QObject>
 #include <QIODevice>
 #include <QDir>
+#include <QUrl>
 
 using namespace bb::cascades;
 
 Flickagram::Flickagram(bb::cascades::Application *app) :
 		QObject(app) {
+
+	qmlRegisterType<WebImageView>("org.labsquare", 1, 0, "WebImageView");
 
 	// create scene document from main.qml asset
 	// set parent to created document to ensure it exists for the whole application lifetime
@@ -43,16 +47,23 @@ Flickagram::Flickagram(bb::cascades::Application *app) :
 	// Create a network access manager and connect a custom slot to its
 	// finished signal
 	mNetworkAccessManager = new QNetworkAccessManager(this);
+	mNetworkAccessManagerImages = new QNetworkAccessManager(this);
 
 	bool result = connect(mNetworkAccessManager,
 			SIGNAL(finished(QNetworkReply*)), this,
 			SLOT(requestFinished(QNetworkReply*)));
 
+	bool resultImages = connect(mNetworkAccessManagerImages,
+			SIGNAL(finished(QNetworkReply*)), this,
+			SLOT(imageRequestFinished(QNetworkReply*)));
+
 	// Displays a warning message if there's an issue connecting the signal
 	// and slot. This is a good practice with signals and slots as it can
 	// be easier to mistype a slot or signal definition
-	Q_ASSERT( result);
+	Q_ASSERT(result);
 	Q_UNUSED(result);
+	Q_ASSERT(resultImages);
+	Q_UNUSED(resultImages);
 
 // Create a file in the application's data directory
 	mFile = new QFile("data/model.xml");
@@ -69,15 +80,55 @@ void Flickagram::initiateRequest() {
 // Create and send the network request
 	QNetworkRequest request = QNetworkRequest();
 
-	QString queryUri = QString(
-			"%1?method=%2&api_key=%3&extras=url_t,url_m&format=rest").arg(
-			"http://api.flickr.com/services/rest/",
-			"flickr.interestingness.getList",
-			"468f6dc4e3733eddca5084d4ec8405fd");
-	qDebug() << queryUri;
+	QString queryUri =
+			QString(
+					"%1?method=%2&api_key=%3&extras=url_t,url_m,url_o,url_l&format=rest").arg(
+					"http://api.flickr.com/services/rest/",
+					"flickr.interestingness.getList",
+					"468f6dc4e3733eddca5084d4ec8405fd");
 	QUrl url(queryUri);
 	request.setUrl(QUrl(queryUri));
 	mNetworkAccessManager->get(request);
+}
+
+
+void Flickagram::downloadImageInitiateRequest(const QString & uri) {
+	// Start the activity indicator
+	mActivityIndicator->start();
+
+	// Create and send the network request
+	QNetworkRequest request = QNetworkRequest();
+
+	request.setUrl(QUrl(uri));
+	mNetworkAccessManagerImages->get(request);
+}
+
+void Flickagram::imageRequestFinished(QNetworkReply* reply) {
+// Check the network reply for errors
+	if (reply->error() == QNetworkReply::NoError) {
+
+		mFileWallpaper = new QFile("data/wallpaper.png");
+		// Open the file and print an error if the file cannot be opened
+		if (!mFileWallpaper->open(QIODevice::ReadWrite)) {
+			qDebug() << "\n Failed to open file";
+			return;
+		}
+
+		// Write to the file using the reply data and close the file
+		mFileWallpaper->write(reply->readAll());
+		mFileWallpaper->flush();
+		mFileWallpaper->close();
+
+		bb::platform::HomeScreen homeScreen;
+		// Setting wallpaper to image bundled with an application's assets.
+		homeScreen.setWallpaper(QUrl("data/wallpaper.png"));
+
+		mActivityIndicator->stop();
+
+	} else {
+		qDebug() << "\n Problem with the network";
+		qDebug() << "\n" << reply->errorString();
+	}
 }
 
 void Flickagram::requestFinished(QNetworkReply* reply) {
@@ -107,6 +158,12 @@ void Flickagram::requestFinished(QNetworkReply* reply) {
 	}
 }
 
+void Flickagram::setAsWallpaper(QString url) {
+
+	downloadImageInitiateRequest(url);
+
+}
+
 void Flickagram::cleanupXml() {
 
 	// clear group data model
@@ -121,13 +178,18 @@ void Flickagram::cleanupXml() {
 
 	QList<QMap<QString, QString> > photos;
 
+	qDebug() << mFile;
+
 	QDomDocument doc("mydocument");
 
 	if (!doc.setContent(mFile)) {
+		fprintf(stderr, "Couldn't init XML Dom Object.\n");
+		mFile->close();
 		return;
 	}
 	mFile->close();
 
+	fprintf(stderr, "About to process photos\n");
 	//Get the root element
 	QDomElement docElem = doc.documentElement();
 
@@ -140,16 +202,18 @@ void Flickagram::cleanupXml() {
 	//Check each node one by one.
 	QMap<QString, QVariant> photo;
 	for (int ii = 0; ii < nodeList.count(); ii++) {
-
+		fprintf(stderr, "Loaded photo %u.\n",ii);
 		// get the current one as QDomElement
-		QDomElement el = nodeList.at(ii).toElement();
+				QDomElement el = nodeList.at(ii).toElement();
 
-		photo["id"] = el.attributes().namedItem("id").nodeValue();
-		photo["title"] = el.attributes().namedItem("title").nodeValue();
-		photo["url_t"] = el.attributes().namedItem("url_t").nodeValue();
-		photo["url_m"] = el.attributes().namedItem("url_m").nodeValue();
+				photo["id"] = el.attributes().namedItem("id").nodeValue();
+				photo["title"] = el.attributes().namedItem("title").nodeValue();
+				photo["url_m"] = el.attributes().namedItem("url_m").nodeValue();
+				photo["url_o"] = el.attributes().namedItem("url_o").nodeValue();
+				photo["url_l"] = el.attributes().namedItem("url_l").nodeValue();
+				//photo["url_n"] = el.attributes().namedItem("url_n").nodeValue();
 
-		mGroupDataModel->insert(photo);
-	}
+				mGroupDataModel->insert(photo);
+			}
 
-}
+		}
