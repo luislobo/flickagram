@@ -12,6 +12,7 @@
 #include <bb/cascades/ListView>
 #include <bb/cascades/XmlDataModel>
 #include <bb/platform/HomeScreen>
+#include <bb/system/SystemToast>
 
 #include <QObject>
 #include <QIODevice>
@@ -19,6 +20,7 @@
 #include <QUrl>
 
 using namespace bb::cascades;
+using namespace bb::system;
 
 Flickagram::Flickagram(bb::cascades::Application *app) :
 		QObject(app) {
@@ -42,7 +44,9 @@ Flickagram::Flickagram(bb::cascades::Application *app) :
 
 	// Retrieve the list so we can set the data model on it once
 	// we retrieve it
-	mListView = root->findChild<ListView*>("list");
+	mListView = root->findChild<ListView*>("listView");
+
+	mFirstLabel = root->findChild<Label*>("initmsg");
 
 	// Create a network access manager and connect a custom slot to its
 	// finished signal
@@ -68,12 +72,16 @@ Flickagram::Flickagram(bb::cascades::Application *app) :
 // Create a file in the application's data directory
 	mFile = new QFile("data/model.xml");
 
+	// get the first set of images
+	this->initiateRequest();
+
 // set created root object as a scene
 	app->setScene(root);
 
 }
 
 void Flickagram::initiateRequest() {
+
 // Start the activity indicator
 	mActivityIndicator->start();
 
@@ -90,7 +98,6 @@ void Flickagram::initiateRequest() {
 	request.setUrl(QUrl(queryUri));
 	mNetworkAccessManager->get(request);
 }
-
 
 void Flickagram::downloadImageInitiateRequest(const QString & uri) {
 	// Start the activity indicator
@@ -123,6 +130,10 @@ void Flickagram::imageRequestFinished(QNetworkReply* reply) {
 		// Setting wallpaper to image bundled with an application's assets.
 		homeScreen.setWallpaper(QUrl("data/wallpaper.png"));
 
+		SystemToast *toast = new SystemToast(this);
+		toast->setBody(tr("The photo was set as a wallpaper successfully!"));
+		toast->show();
+
 		mActivityIndicator->stop();
 
 	} else {
@@ -147,6 +158,8 @@ void Flickagram::requestFinished(QNetworkReply* reply) {
 		mFile->close();
 
 		cleanupXml();
+
+		mFirstLabel->setVisible(false);
 
 		// Set the new data model on the list and stop the activity indicator
 		mListView->setDataModel(mGroupDataModel);

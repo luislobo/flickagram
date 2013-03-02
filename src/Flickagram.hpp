@@ -5,6 +5,7 @@
 #include <bb/cascades/GroupDataModel>
 #include <bb/cascades/ActivityIndicator>
 #include <bb/cascades/ListView>
+#include <bb/cascades/Label>
 #include <QObject>
 #include <QFile>
 
@@ -53,6 +54,7 @@ private:
 	ActivityIndicator *mActivityIndicator;
 	GroupDataModel *mGroupDataModel;
 	ListView *mListView;
+	Label *mFirstLabel;
 	QNetworkAccessManager *mNetworkAccessManager;
 	QNetworkAccessManager *mNetworkAccessManagerImages;
 	QFile *mFile;

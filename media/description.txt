@@ -1,0 +1,5 @@
+Flickagram - Your Blackberry 10 Flickr experience
+Flickagram - Your Blackberry 10 Flickr experience
+It's a Flickr application for Blackberry 10. Right now allows you to browse the first 50 Interesting Photos.
+It lets you set one of them as a wallpaper.
+In the future there will be lots of other features, including uploading photos to Flickr.

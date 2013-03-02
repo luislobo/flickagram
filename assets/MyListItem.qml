@@ -1,46 +1,34 @@
 // Grid view with detail project template
 import bb.cascades 1.0
+import org.labsquare 1.0
 
 // Item used by the list to present a small thumbnail image with text.
+
 Container {
-    layout: DockLayout {
+    ProgressIndicator {
+        value: img.loading
+        verticalAlignment: VerticalAlignment.Center
+        horizontalAlignment: HorizontalAlignment.Center
+        visible: (img.loading < 1.0)
+        toValue: 1.0
+        opacity: 1.0
     }
-    Container {
-        // this container is used to show selection background when item is selected
-        id: mySelectionContainer
-        opacity: 0.0
-        verticalAlignment: VerticalAlignment.Fill
+    WebImageView {
+        id: img
+        url: ListItemData.url_m
+        horizontalAlignment: HorizontalAlignment.Left
+        verticalAlignment: VerticalAlignment.Center
+        scalingMethod: ScalingMethod.AspectFit
+        visible: (img.loading == 1.0)
+        leftMargin: 10
+        rightMargin: 10
+        topMargin: 10
+        bottomMargin: 10
+    }
+    /*Label {
+        text: ListItemData.title
+    }
+    Divider {
         horizontalAlignment: HorizontalAlignment.Fill
-    }
-    Container {
-        verticalAlignment: VerticalAlignment.Fill
-        horizontalAlignment: HorizontalAlignment.Fill
-        // show image
-        ImageView {
-            imageSource: ListItemData.thumb
-            scalingMethod: ScalingMethod.AspectFit
-            layoutProperties: StackLayoutProperties {
-                spaceQuota: 1.0
-            }
-            horizontalAlignment: HorizontalAlignment.Center
-            verticalAlignment: VerticalAlignment.Center
-        }
-        // and text below
-        Label {
-            text: ListItemData.text
-            textStyle.base: SystemDefaults.TextStyles.SmallText
-            horizontalAlignment: HorizontalAlignment.Center
-        }
-    }
-
-    // Set visual appearance of activated and selected item.
-    function setHighlight(active) {
-        mySelectionContainer.opacity = active? 1.0: 0.0;
-    }
-
-    // Signal handler for list item activation.
-    ListItem.onActivationChanged: {
-        console.debug("ActivationChanged")
-        setHighlight (ListItem.active);
-    }
+    }*/
 }
