@@ -131,7 +131,8 @@ void Flickagram::imageRequestFinished(QNetworkReply* reply) {
 		homeScreen.setWallpaper(QUrl("data/wallpaper.png"));
 
 		SystemToast *toast = new SystemToast(this);
-		toast->setBody(tr("The photo was set as a wallpaper successfully!"));
+		QString msg = tr("The photo was set as a wallpaper successfully!");
+		toast->setBody(msg);
 		toast->show();
 
 		mActivityIndicator->stop();

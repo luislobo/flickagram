@@ -30,23 +30,30 @@
 
     <!-- The name that is displayed in the BlackBerry Tablet OS application installer. 
          May have multiple values for each language. See samples or xsd schema file. Optional. -->
-    <name>Flickagram</name>
+    <name>
+       Flickagram
+       <text xml:lang="es">Flickagram</text>
+    </name>
     
     <!-- A string value of the format <0-999>.<0-999>.<0-999> that represents application version which can be used to check for application upgrade. 
          Values can also be 1-part or 2-part. It is not necessary to have a 3-part value.
          An updated version of application must have a versionNumber value higher than the previous version. Required. -->
     <versionNumber>1.0.0</versionNumber>
+    <packageLocale>es</packageLocale>
 
     <!-- Fourth digit segment of the package version. First three segments are taken from the 
          <versionNumber> element.  Must be an integer from 0 to 2^16-1 -->
-    <buildId>2</buildId>
+    <buildId>3</buildId>
                  
     <!-- A string value (such as "v1", "2.5", or "Alpha 1") that represents the version of the application, as it should be shown to users. Optional. -->
     <!-- <versionLabel></versionLabel> -->
 
     <!-- Description, displayed in the BlackBerry Tablet OS application installer.
          May have multiple values for each language. See samples or xsd schema file. Optional. -->
-    <description>Flickagram - Your Blackberry 10 Flickr experience</description>
+    <description>
+       Flickagram - Your Blackberry 10 Flickr experience
+       <text xml:lang="es">Flickagram - Tu experiencia Flickr en Blackberry 10</text>
+    </description>
 
     <!-- Copyright information. Optional. -->
     <!-- <copyright></copyright> -->
@@ -92,6 +99,10 @@
     <asset path="icon.png">icon.png</asset>
     <asset path="assets">assets</asset>
     
+    <asset path="splashlandscape.png">splashlandscape.png</asset>
+    <asset path="splashportrait.png">splashportrait.png</asset>
+    <splashscreen>splashlandscape.png:splashportrait.png</splashscreen>
+
     <!-- Locale support -->
     <asset path="translations" dest="qm">
         <include name="*.qm"/>
