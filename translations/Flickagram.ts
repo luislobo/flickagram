@@ -4,6 +4,7 @@
 <context>
     <name>ImageDetail</name>
     <message>
+        <location filename="../assets/ImageDetail.qml" line="10"/>
         <source>Set as Wallpaper</source>
         <translation type="unfinished"></translation>
     </message>
@@ -11,6 +12,7 @@
 <context>
     <name>main</name>
     <message>
+        <location filename="../assets/main.qml" line="62"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
