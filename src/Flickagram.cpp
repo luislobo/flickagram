@@ -69,7 +69,10 @@ Flickagram::Flickagram(bb::cascades::Application *app) :
 	Q_ASSERT(resultImages);
 	Q_UNUSED(resultImages);
 
-// Create a file in the application's data directory
+	QDir * oDir = new QDir("data");
+	oDir->remove("model.xml");
+
+	// Create a file in the application's data directory
 	mFile = new QFile("data/model.xml");
 
 	// get the first set of images
@@ -146,6 +149,9 @@ void Flickagram::imageRequestFinished(QNetworkReply* reply) {
 void Flickagram::requestFinished(QNetworkReply* reply) {
 // Check the network reply for errors
 	if (reply->error() == QNetworkReply::NoError) {
+
+		QDir * oDir = new QDir("data");
+		oDir->remove("model.xml");
 
 		// Open the file and print an error if the file cannot be opened
 		if (!mFile->open(QIODevice::ReadWrite)) {
