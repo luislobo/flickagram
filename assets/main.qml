@@ -1,4 +1,5 @@
 import bb.cascades 1.0
+import "appmenu"
 
 NavigationPane {
     id: navigationPane
@@ -73,9 +74,27 @@ NavigationPane {
         ComponentDefinition {
             id: imageDetailPageDefinition
             source: "ImageDetail.qml"
+        },
+        Sheet {
+            id: helpSheet
+            objectName: "helpSheet"
+            //-- sheet GUI appearence component is defined in external HelpSheet.qml file
+            content: WebPageHelpSheet {
+                id: helpContent
+                // theURL is a custom property to allow setting the URL fro  outside or inside the QML file
+                theURL: "http://www.luislobo.com.ar/flickagram/help"
+            }
+        },
+        Sheet {
+            id: preferencesSheet
+            objectName: "preferencesSheet"
+            //-- sheet GUI appearence component is defined in external PreferencesSheet.qml file
+            content: PreferencesSheet {
+                id: preferencesContent
+            }
         }
     ]
-    function setDetailItem(selectedItem) {       
+    function setDetailItem(selectedItem) {
         var imageDetailPage = getImageDetailPage();
         console.debug("pushing detail " + imageDetailPage)
         var patt = /^http/;
@@ -92,6 +111,34 @@ NavigationPane {
         }
         return imageDetailPage;
     }
+    function openPreferences() {
+        preferencesSheet.open()
+    }
+
+    // the handler SLOT if Prefs were saved
+    // SIGNALed from PrefrencesSheet
+    function onSavePreferences(ok) {
+        if (ok) {
+            //-- when sheet is closed with success, changes should be saved
+            // TODO
+        }
+        preferencesSheet.close()
+    }
+    // the handler SLOT if Prefs were saved
+    // SIGNALed from PrefrencesSheet
+    function onSendFeedback(ok) {
+        if (ok) {
+            //-- when sheet is closed with success, feedback should be sent
+            // TODO
+        }
+        feedbackSheet.close()
+    }
+
+    // the handler  SLOT HELP done
+    // SIGNALed from HelpSheet
+    function closeHelp(ok) {
+        helpSheet.close()
+    }
     onCreationCompleted: {
         // this slot is called when declarative scene is created
         // write post creation initialization here
@@ -100,5 +147,12 @@ NavigationPane {
         // enable layout to adapt to the device rotation
         // don't forget to enable screen rotation in bar-bescriptor.xml (Application->Orientation->Auto-orient)
         OrientationSupport.supportedDisplayOrientation = SupportedDisplayOrientation.All;
+
+        //-- connect the help sheet close SIGNAL to the handler SLOT
+        helpContent.helpDone.connect(closeHelp)
+        //-- connect the preferences save SIGNAL to the handler SLOT
+        preferencesContent.done.connect(onSavePreferences)
+        //-- connect the preferences save SIGNAL to the handler SLOT
+        feedbackContent.send.connect(onSendFeedback)
     }
 }

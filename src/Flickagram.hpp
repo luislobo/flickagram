@@ -33,9 +33,50 @@ Q_OBJECT
 
 public:
 	Flickagram(bb::cascades::Application *app);
+
 	/*!
 	 * Initiates the network request.
 	 */
+	Q_INVOKABLE
+	void initLocalization(QTranslator* translator);
+
+	Q_INVOKABLE
+	void initLocalization(QTranslator* translator);
+
+	/*
+	* Refreshes the UI with the specified locale
+	*
+	* @param locale - the locale to change to
+	*/
+	Q_INVOKABLE
+	void updateLocale(QString locale);
+
+	/*
+	* Allows the current language to be retrieved from QML
+	*
+	* @return the current language (translated)
+	*/
+	Q_INVOKABLE
+	QString getCurrentLanguage();
+
+	/*
+	* Allows the current locale to be retrieved from QML
+	*
+	* @return the current locale
+	*/
+	Q_INVOKABLE
+	QString getCurrentLocale();
+
+	/*
+	* Workaround to force keyboard to hide when readonly text area is touched
+	*/
+	Q_INVOKABLE
+	void suppressKeyboard();
+
+
+    Q_INVOKABLE
+    void inviteBBM();
+
 	Q_INVOKABLE
 	void initiateRequest();
 	Q_INVOKABLE
@@ -50,6 +91,10 @@ private Q_SLOTS:
 	 */
 	void requestFinished(QNetworkReply* reply);
 	void imageRequestFinished(QNetworkReply* reply);
+
+	// locale changed by user from device settings
+	void localeChanged();
+
 private:
 	ActivityIndicator *mActivityIndicator;
 	GroupDataModel *mGroupDataModel;
@@ -59,6 +104,27 @@ private:
 	QNetworkAccessManager *mNetworkAccessManagerImages;
 	QFile *mFile;
 	QFile *mFileWallpaper;
+	Notifier * m_notifier;
+
+	Application *m_app;
+    Menu* createApplicationMenu();
+
+    HelpActionItem* mHelpItem;
+    ActionItem* mFeedbackItem;
+    SettingsActionItem* mSettingsItem;
+    ActionItem* mLogoutItem;
+
+    ODSData* mOdsData;
+    ODSSettings* mOdsSettings;
+
+    QString mCurrentLocale;
+    LocaleHandler* mLocaleHandler;
+    QTranslator* mTranslator;
+
+    bb::system::InvokeManager *mInvokeManager;
+
+    void translateMenuItems();
+    void initTheApplication();
 
 	void cleanupXml();
 
