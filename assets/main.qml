@@ -92,6 +92,14 @@ NavigationPane {
             content: PreferencesSheet {
                 id: preferencesContent
             }
+        },
+        Sheet {
+            id: feedbackSheet
+            objectName: "feedbackSheet"
+            //-- sheet GUI appearence component is defined in external PreferencesSheet.qml file
+            content: FeedbackSheet {
+                id: feedbackContent
+            }
         }
     ]
     function setDetailItem(selectedItem) {

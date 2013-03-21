@@ -8,11 +8,19 @@
 #include <bb/cascades/Label>
 #include <QObject>
 #include <QFile>
+#include <bb/cascades/Menu>
+#include <QTranslator>
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
+#include <bb/cascades/LocaleHandler>
+#include <bb/system/InvokeManager.hpp>
+#include <bb/system/InvokeRequest.hpp>
+
 #include "WebImageView.h"
+#include "FlickagramData.hpp"
+#include "FlickagramSettings.hpp"
 
 using namespace bb::cascades;
 
@@ -37,9 +45,6 @@ public:
 	/*!
 	 * Initiates the network request.
 	 */
-	Q_INVOKABLE
-	void initLocalization(QTranslator* translator);
-
 	Q_INVOKABLE
 	void initLocalization(QTranslator* translator);
 
@@ -77,6 +82,12 @@ public:
     Q_INVOKABLE
     void inviteBBM();
 
+    Q_INVOKABLE
+    void inviteFlickagram();
+
+    Q_INVOKABLE
+    void leaveReview();
+
 	Q_INVOKABLE
 	void initiateRequest();
 	Q_INVOKABLE
@@ -92,8 +103,15 @@ private Q_SLOTS:
 	void requestFinished(QNetworkReply* reply);
 	void imageRequestFinished(QNetworkReply* reply);
 
-	// locale changed by user from device settings
-	void localeChanged();
+    // slots from AppMenu Sheets:
+    void feedbackTriggered();
+    void helpTriggered();
+    void settingsTriggered();
+    // locale changed by user from device settings
+    void localeChanged();
+
+    void shareTextWithBBM(const QString& text);
+    void shareTextWithMail(const QString& text);
 
 private:
 	ActivityIndicator *mActivityIndicator;
@@ -104,9 +122,7 @@ private:
 	QNetworkAccessManager *mNetworkAccessManagerImages;
 	QFile *mFile;
 	QFile *mFileWallpaper;
-	Notifier * m_notifier;
 
-	Application *m_app;
     Menu* createApplicationMenu();
 
     HelpActionItem* mHelpItem;
@@ -114,8 +130,8 @@ private:
     SettingsActionItem* mSettingsItem;
     ActionItem* mLogoutItem;
 
-    ODSData* mOdsData;
-    ODSSettings* mOdsSettings;
+    FlickagramData* mFlickagramData;
+    FlickagramSettings* mOdsSettings;
 
     QString mCurrentLocale;
     LocaleHandler* mLocaleHandler;

@@ -10,18 +10,25 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/ListView>
+#include <bb/cascades/LocaleHandler>
+#include <bb/cascades/Menu>
+#include <bb/cascades/ActionItem>
+#include <bb/cascades/HelpActionItem>
+#include <bb/cascades/SettingsActionItem>
+#include <bb/cascades/Sheet>
 #include <bb/cascades/XmlDataModel>
 #include <bb/platform/HomeScreen>
 #include <bb/system/SystemToast>
 
 #include <bb/system/InvokeManager.hpp>
 #include <bb/system/InvokeRequest.hpp>
-#include <bb/cascades/LocaleHandler>
 
 #include <QObject>
 #include <QIODevice>
 #include <QDir>
 #include <QUrl>
+
+#include <bps/virtualkeyboard.h>
 
 using namespace bb::cascades;
 using namespace bb::system;
@@ -92,19 +99,13 @@ Flickagram::Flickagram(bb::cascades::Application *app) :
 	// get the first set of images
 	this->initiateRequest();
 
-	Notifier * m_notifier = new Notifier();
-	connect(m_notifier, SIGNAL(changed()), this, SLOT(localeChanged()));
-
 // set created root object as a scene
 	app->setScene(root);
 
 	qDebug() << "set the scene";
 
-	if (!mIsLaunchedEmbedded) {
-		initTheApplication();
-	} else {
-		qDebug() << "we are running EMBEDDED";
-	}
+	initTheApplication();
+
 	qDebug() << "INIT done";
 }
 /**
@@ -154,34 +155,6 @@ void Flickagram::initLocalization(QTranslator* translator) {
 		qDebug() << "connected systemLanguageChanged";
 
 }
-
-/**
- * App::updateLocale(QString locale)
- *
- * Update view content basing on the given locale.
- *
- */
-void Flickagram::updateLocale(QString locale) {
-	qDebug() << "updateLocale: " << locale;
-
-	// if locale is empty - refresh current. otherwise change the local
-	if (!locale.trimmed().isEmpty() && mCurrentLocale != locale) {
-		mCurrentLocale = locale;
-
-		qDebug() << "updating UI to language: " << mCurrentLocale;
-		QString filename = QString("Flickagram_%1").arg(mCurrentLocale);
-		if (mTranslator->load(filename, "app/native/qm")) {
-			// multiple translators can be installed but for this
-			// app we only use one translator instance for brevity
-			Application::instance()->removeTranslator(mTranslator);
-			Application::instance()->installTranslator(mTranslator);
-			// retranslate System menu items
-			translateMenuItems();
-		}
-
-	}
-}
-
 /**
  * (re)translates the titles of System menus
  *
@@ -357,26 +330,38 @@ void Flickagram::cleanupXml() {
 
 		}
 
-void Flickagram::setApplication(bb::cascades::Application * app,
-		QTranslator * translator, QString currentLocale) {
-	m_app = app;
-
-}
-
-void Flickagram::updateLocale(QString locale) {
-	m_currentLocale = locale;
-	QString filename = QString("Flickagram_%1").arg(m_currentLocale);
-	if (m_translator->load(filename, "app/native/qm")) {
-		m_app->removeTranslator(m_translator);
-		m_app->installTranslator(m_translator);
-	}
-}
-
 // S L O T S
 
 // handles SLOT from Locale Chaned by user at Device
 void Flickagram::localeChanged() {
         updateLocale(QLocale().name());
+}
+
+/**
+ * App::updateLocale(QString locale)
+ *
+ * Update view content basing on the given locale.
+ *
+ */
+void Flickagram::updateLocale(QString locale) {
+        qDebug() << "updateLocale: " << locale;
+
+        // if locale is empty - refresh current. otherwise change the local
+        if (!locale.trimmed().isEmpty() && mCurrentLocale != locale) {
+                mCurrentLocale = locale;
+
+                qDebug() << "updating UI to language: " << mCurrentLocale;
+                QString filename = QString("Flickagram_%1").arg(mCurrentLocale);
+                if (mTranslator->load(filename, "app/native/qm")) {
+                        // multiple translators can be installed but for this
+                        // app we only use one translator instance for brevity
+                        Application::instance()->removeTranslator(mTranslator);
+                        Application::instance()->installTranslator(mTranslator);
+                        // retranslate System menu items
+                        translateMenuItems();
+                }
+
+        }
 }
 
 
@@ -433,7 +418,7 @@ void Flickagram::inviteBBM() {
         mInvokeManager->invoke(bbmRequest);
 }
 
-void OpenDataSpace::shareTextWithBBM(const QString& text) {
+void Flickagram::shareTextWithBBM(const QString& text) {
         InvokeRequest bbmRequest;
         bbmRequest.setTarget("sys.bbm.sharehandler");
         bbmRequest.setAction("bb.action.SHARE");
@@ -444,7 +429,7 @@ void OpenDataSpace::shareTextWithBBM(const QString& text) {
         // https://developer.blackberry.com/cascades/documentation/device_platform/invocation/sending_invocation.html
 }
 
-void OpenDataSpace::shareTextWithMail(const QString& text) {
+void Flickagram::shareTextWithMail(const QString& text) {
         InvokeRequest mailRequest;
         mailRequest.setTarget("sys.pim.uib.email.hybridcomposer");
         mailRequest.setAction("bb.action.SENDEMAIL");
@@ -455,15 +440,15 @@ void OpenDataSpace::shareTextWithMail(const QString& text) {
         mInvokeManager->invoke(mailRequest);
 }
 
-void OpenDataSpace::inviteFlickagram() {
+void Flickagram::inviteFlickagram() {
         shareTextWithBBM(
                         tr(
-                                        "Please download OpenDataSpace Application from BlackBerry World for FREE: ")
+                                        "Please download Flickagram Application from BlackBerry World for FREE: ")
                                         + "http://appworld.blackberry.com/webstore/content/134203");
         qDebug() << "invite to BBM";
 }
 
-void OpenDataSpace::leaveReview() {
+void Flickagram::leaveReview() {
         InvokeRequest bbmRequest;
         bbmRequest.setAction("bb.action.OPEN");
         bbmRequest.setMimeType("application/x-bb-appworld");

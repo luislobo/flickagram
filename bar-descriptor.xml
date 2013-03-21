@@ -101,8 +101,13 @@
     
     <asset path="splashlandscape.png">splashlandscape.png</asset>
     <asset path="splashportrait.png">splashportrait.png</asset>
-    <splashscreen>splashlandscape.png:splashportrait.png</splashscreen>
-
+    <splashScreens>
+   		<image></image>
+   		<image></image>
+   		<image>splashlandscape.png</image>
+   		<image>splashportrait.png</image>
+	</splashScreens>
+	
     <!-- Locale support -->
     <asset path="translations" dest="qm">
         <include name="*.qm"/>
